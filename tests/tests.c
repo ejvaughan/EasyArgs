@@ -57,11 +57,24 @@ static char *testDuplicateTemplateArguments() {
 	return 0;
 }
 
+static char *testReadArgumentsFromDefaultConfig() {
+	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 0, 1, NULL);
+	CommandLineArgTemplate *templates[] = { &foo };
+	int templatesCount = sizeof(templates)/sizeof(templates[0]);
+
+	char *argv[] = { "" };
+
+	ParseCommandLineArgs(1, argv, templates, templatesCount, NULL, "test.conf", NULL);
+	mu_assert(foo.value != NULL && strcmp(foo.value, "HelloWorld") == 0, "Command line arg value should be read from 'testconfig' file");
+	return 0;
+}
+
 static char *allTests() {
 	mu_run_test(testUnkownOption);
 	mu_run_test(testMissingArgument);
 	mu_run_test(testMissingRequiredOption);
 	mu_run_test(testDuplicateTemplateArguments);
+	mu_run_test(testReadArgumentsFromDefaultConfig);
 	return 0;
 }
 
