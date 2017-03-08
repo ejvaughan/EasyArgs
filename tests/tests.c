@@ -28,6 +28,17 @@ static char *testMissingArgument() {
 	return 0;
 }
 
+static char *testArgument() {
+	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 0, 1, NULL);
+	CommandLineArgTemplate *templates[] = { &foo };
+	int templatesCount = sizeof(templates)/sizeof(templates[0]);
+	
+	char *argv[] = { "", "-f", "HelloWorld" };
+	ParseCommandLineArgs(3, argv, templates, templatesCount, NULL, NULL, NULL);
+	mu_assert(strcmp(foo.value, "HelloWorld") == 0, "Option argument not parsed!");
+	return 0;
+}
+
 static char *testMissingRequiredOption() {
 	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 1, 0, NULL);
 	CommandLineArgTemplate *templates[] = { &foo };
@@ -69,12 +80,41 @@ static char *testReadArgumentsFromDefaultConfig() {
 	return 0;
 }
 
+static char *testDefaultConfigArgumentOverride() {
+	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 0, 1, NULL);
+	CommandLineArgTemplate *templates[] = { &foo };
+	int templatesCount = sizeof(templates)/sizeof(templates[0]);
+
+	char *argv[] = { "", "-f", "NotHelloWorld" };
+
+	ParseCommandLineArgs(3, argv, templates, templatesCount, NULL, "test.conf", NULL);
+	mu_assert(foo.value != NULL && strcmp(foo.value, "NotHelloWorld") == 0, "Command line arg value should be read from 'testconfig' file");
+	return 0;
+}
+
+static char *testConfigOption() {
+	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 0, 1, NULL);
+	CommandLineArgTemplate config = CreateArgTemplate("c", NULL, 0, 1, NULL);
+	CommandLineArgTemplate *templates[] = { &foo, &config };
+	int templatesCount = sizeof(templates)/sizeof(templates[0]);
+
+	char *argv[] = { "", "-c", "test.conf" };
+
+	ParseCommandLineArgs(3, argv, templates, templatesCount, &config, "test.conf", NULL);
+	mu_assert(foo.value != NULL && strcmp(foo.value, "HelloWorld") == 0, "Command line arg value should be read from 'testconfig' file");
+	return 0;
+}
+
+
 static char *allTests() {
 	mu_run_test(testUnkownOption);
 	mu_run_test(testMissingArgument);
 	mu_run_test(testMissingRequiredOption);
 	mu_run_test(testDuplicateTemplateArguments);
 	mu_run_test(testReadArgumentsFromDefaultConfig);
+	mu_run_test(testDefaultConfigArgumentOverride);
+	mu_run_test(testConfigOption);
+	mu_run_test(testArgument);
 	return 0;
 }
 
