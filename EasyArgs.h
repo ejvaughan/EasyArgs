@@ -17,8 +17,8 @@ typedef struct CommandLineArgTemplate {
 #define CreateArgTemplate(name, longName, required, takesArg, description) \
 { description, name, longName, required, takesArg, 0, NULL }
 
-void FreeCommandLineArgTemplateResources(CommandLineArgTemplate *templates[], int templatesCount);
+int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templates[], int templatesCount, CommandLineArgTemplate *configFileOptionTemplate, char *defaultConfigFile, char **outError);
 
-int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templates[], int templatesCount, CommandLineArgTemplate *configFileOptionTemplate, char *defaultConfigFile);
+void FreeCommandLineArgTemplateResources(CommandLineArgTemplate *templates[], int templatesCount);
 
 #endif /* EasyArgs.h */

@@ -5,14 +5,17 @@
 #include "uthash.h"
 #include <errno.h>
 
-static void ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, CommandLineArgTemplate **templatesByLongName, const char *configFile) {
+static int ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, CommandLineArgTemplate **templatesByLongName, const char *configFile, char **errorMessage) {
 	if (!configFile) {
 		return;
 	}
 
 	FILE *f = fopen(configFile, "r");
 	if (!f) {
-		return;
+		if (errorMessage) {
+			asprintf(errorMessage, "Unable to open configuration file %s", configFile);
+		}
+		return -1;
 	}
 	
 	char *line = NULL;
@@ -43,8 +46,12 @@ static void ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, Co
 					foundTemplate->value = arg;
 					arg = NULL;
 				} else {
-					printf("Error reading configuration file %s: option %s takes an argument\n", configFile, option);
-					exit(EXIT_FAILURE);
+					if (errorMessage) {
+						asprintf(errorMessage, "Error reading configuration file %s: option %s takes an argument\n", configFile, option);
+					}
+					free(option);
+					free(line);
+					return -1;
 				}
 			}
 		}
@@ -66,17 +73,38 @@ void FreeCommandLineArgTemplateResources(CommandLineArgTemplate *templates[], in
 	}
 }
 
-int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templates[], int templatesCount, CommandLineArgTemplate *configFileOptionTemplate, char *defaultConfigFile)
+int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templates[], int templatesCount, CommandLineArgTemplate *configFileOptionTemplate, char *defaultConfigFile, char **outError)
 {
+	if (templatesCount <= 0) {
+		return 0;
+	}
+
 	CommandLineArgTemplate *templatesByName = NULL;
 	CommandLineArgTemplate *templatesByLongName = NULL;
 	int i;
+	int retVal = 0;
 
 	// Build maps
 	for (i = 0; i < templatesCount; ++i) {
 		CommandLineArgTemplate *template = templates[i];
-		HASH_ADD_KEYPTR(nameHH, templatesByName, template->name, strlen(template->name), template);
-		HASH_ADD_KEYPTR(longNameHH, templatesByLongName, template->longName, strlen(template->longName), template);
+		if (template->name) {
+			CommandLineArgTemplate *existing = NULL;
+			HASH_FIND(nameHH, templatesByName, template->name, strlen(template->name), existing);
+			if (existing) {
+				// Failed precondition; templates' names should be unique
+				goto exit;
+			}
+			HASH_ADD_KEYPTR(nameHH, templatesByName, template->name, strlen(template->name), template);
+		}
+		if (template->longName) {
+			CommandLineArgTemplate *existing = NULL;
+			HASH_FIND(longNameHH, templatesByLongName, template->longName, strlen(template->longName), existing);
+			if (existing) {
+				// Failed precondition; templates' long names should be unique
+				goto exit;
+			}
+			HASH_ADD_KEYPTR(longNameHH, templatesByLongName, template->longName, strlen(template->longName), template);
+		}
 	}
 	
 	for (i = 1; i < argc; ++i) {
@@ -94,8 +122,13 @@ int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templat
 			}
 
 			if (!foundTemplate) {
-				printf("Error: unknown option: %s\n", optionName);
-				exit(EXIT_FAILURE);
+				// Unknown option
+				if (outError) {
+					asprintf(outError, "Error: unknown option: %s\n", optionName);
+				}
+				
+				retVal = -1;
+				goto exit;
 			}
 
 			foundTemplate->present = 1;
@@ -109,27 +142,47 @@ int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templat
 					foundTemplate->value = strdup(argv[i + 1]);
 					i += 1;
 				} else {
-					printf("Error: option %s takes an argument\n", optionName);
-					exit(EXIT_FAILURE);
+					// Option should have an argument, but doesn't
+					if (outError) {
+						asprintf(outError, "Error: option %s takes an argument\n", optionName);
+					}
+					
+					retVal = -1;
+					goto exit;
 				}
 			}
 		} else {
 			// Stop parsing command line args
+			retVal = i;
 			break;
 		}
 	}
 
 	// Read in arguments from config file, if necessary
 	if (configFileOptionTemplate && configFileOptionTemplate->present) {
-		ParseArgsFromConfigFile(&templatesByName, &templatesByLongName, configFileOptionTemplate->value);
+		if (ParseArgsFromConfigFile(&templatesByName, &templatesByLongName, configFileOptionTemplate->value, outError) < 0) {
+			retVal = -1;
+		}
 	} else if (defaultConfigFile != NULL) {
-		ParseArgsFromConfigFile(&templatesByName, &templatesByLongName, defaultConfigFile);
+		if (ParseArgsFromConfigFile(&templatesByName, &templatesByLongName, defaultConfigFile, outError) < 0) {
+			retVal = -1;
+		}
+	}
+
+	// Make sure that all the required options were supplied
+	for (i = 0; i < templatesCount; ++i) {
+		CommandLineArgTemplate *template = templates[i];
+		if (template->required && !template->value) {
+			retVal = -1;
+			break;
+		}
 	}
 
 	// Clean up
+exit:
 	HASH_CLEAR(nameHH, templatesByName);
 	HASH_CLEAR(longNameHH, templatesByLongName);
 
-	return i;
+	return retVal;
 }
 
