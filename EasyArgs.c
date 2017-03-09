@@ -22,43 +22,74 @@ static int ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, Com
 	char *line = NULL;
 	size_t length = 0;
 	while (getline(&line, &length, f) != -1) {
-		char *option = NULL, *arg = NULL;
+		char *optionStart = line;
+		char *valueStart = NULL;
+		char *valueEnd = NULL;
+		
+		// Skip over whitespace
+		while (*optionStart && isspace(*optionStart)) {
+			++optionStart;
+		}
 
-		int numScanned;
-		if ((numScanned = sscanf(line, "%ms %ms", &option, &arg)) >= 1) {
-			CommandLineArgTemplate *foundTemplate = NULL;
-			HASH_FIND(nameHH, *templatesByName, option, strlen(option), foundTemplate);
+		if (*optionStart == '\0') {
+			continue;
+		}
 
-			if (!foundTemplate) {
-			       	HASH_FIND(longNameHH, *templatesByLongName, option, strlen(option), foundTemplate);
+		char *optionEnd = optionStart;
+
+		// Skip over nonwhitespace
+		while (*optionEnd && !isspace(*optionEnd)) {
+			++optionEnd;
+		}
+
+		if (*optionEnd) {
+			if (optionEnd - line + 1 < length) {
+				valueStart = optionEnd + 1;
+			}
+			*optionEnd = '\0';
+		}
+
+		if (valueStart) {
+			while (*valueStart && isspace(*valueStart)) {
+				++valueStart;
 			}
 
-			if (!foundTemplate) {
-				// Skip over this option
-				free(option);
-				free(arg);
-				continue;
-			}	
+			valueEnd = valueStart;
 
-			foundTemplate->present = 1;
+			while (*valueEnd && !isspace(*valueEnd)) {
+				++valueEnd;
+			}
 
-			if (foundTemplate->takesArg && !foundTemplate->value) {
-				if (numScanned == 2) {
-					foundTemplate->value = arg;
-					arg = NULL;
-				} else {
-					if (errorMessage) {
-						asprintf(errorMessage, "Error reading configuration file %s: option %s takes an argument\n", configFile, option);
-					}
-					free(option);
-					free(line);
-					return -1;
-				}
+			if (valueEnd == valueStart) {
+				valueStart = NULL;
 			}
 		}
 
-		free(option);
-		free(arg);
+		CommandLineArgTemplate *foundTemplate = NULL;
+		HASH_FIND(nameHH, *templatesByName, optionStart, strlen(optionStart), foundTemplate);
+
+		if (!foundTemplate) {
+			HASH_FIND(longNameHH, *templatesByLongName, optionStart, strlen(optionStart), foundTemplate);
+		}
+
+		if (!foundTemplate) {
+			// Skip over this option
+			continue;
+		}	
+
+		foundTemplate->present = 1;
+
+		if (foundTemplate->takesArg && !foundTemplate->value) {
+			if (valueStart) {
+				foundTemplate->value = strndup(valueStart, valueEnd - valueStart);
+			} else {
+				if (errorMessage) {
+					asprintf(errorMessage, "Error reading configuration file %s: option %s takes an argument\n", configFile, optionStart);
+				}
+				free(line);
+				return -1;
+			}
+		}
 	}
 	
 	free(line);
