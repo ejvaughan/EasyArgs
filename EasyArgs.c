@@ -7,6 +7,61 @@
 #include "uthash.h"
 #include <errno.h>
 
+static void ParseOptionAndArgFromLine(char *line, ssize_t lineLength, char **outOption, char **outValue) {
+	if (!line || !outOption || !outValue) {
+		return;
+	}
+
+	char *optionStart = line;
+	char *valueStart = NULL;
+	char *valueEnd = NULL;
+	
+	// Skip over whitespace
+	while (*optionStart && isspace(*optionStart)) {
+		++optionStart;
+	}
+
+	if (*optionStart == '\0') {
+		return;
+	}
+
+	char *optionEnd = optionStart;
+
+	// Skip over nonwhitespace
+	while (*optionEnd && !isspace(*optionEnd)) {
+		++optionEnd;
+	}
+
+	if (*optionEnd) {
+		if (optionEnd - line + 1 < lineLength) {
+			valueStart = optionEnd + 1;
+		}
+		*optionEnd = '\0';
+	}
+
+	if (valueStart) {
+		while (*valueStart && isspace(*valueStart)) {
+			++valueStart;
+		}
+
+		valueEnd = valueStart;
+
+		while (*valueEnd && !isspace(*valueEnd)) {
+			++valueEnd;
+		}
+
+		if (valueEnd == valueStart) {
+			valueStart = NULL;
+		} else {
+			*valueEnd = '\0';
+		}
+	}
+
+	*outOption = optionStart;
+	*outValue = valueStart;
+}
+	
+
 static int ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, CommandLineArgTemplate **templatesByLongName, const char *configFile, char **errorMessage) {
 	if (!configFile) {
 		return 0;
@@ -21,56 +76,22 @@ static int ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, Com
 	}
 	
 	char *line = NULL;
-	size_t length = 0;
-	while (getline(&line, &length, f) != -1) {
-		char *optionStart = line;
-		char *valueStart = NULL;
-		char *valueEnd = NULL;
-		
-		// Skip over whitespace
-		while (*optionStart && isspace(*optionStart)) {
-			++optionStart;
-		}
+	size_t n = 0;
+	ssize_t lineLength;
+	while ((lineLength = getline(&line, &n, f)) != -1) {
+		char *option = NULL, *value = NULL;
 
-		if (*optionStart == '\0') {
+		ParseOptionAndArgFromLine(line, lineLength, &option, &value);
+
+		if (!option) {
 			continue;
 		}
 
-		char *optionEnd = optionStart;
-
-		// Skip over nonwhitespace
-		while (*optionEnd && !isspace(*optionEnd)) {
-			++optionEnd;
-		}
-
-		if (*optionEnd) {
-			if (optionEnd - line + 1 < length) {
-				valueStart = optionEnd + 1;
-			}
-			*optionEnd = '\0';
-		}
-
-		if (valueStart) {
-			while (*valueStart && isspace(*valueStart)) {
-				++valueStart;
-			}
-
-			valueEnd = valueStart;
-
-			while (*valueEnd && !isspace(*valueEnd)) {
-				++valueEnd;
-			}
-
-			if (valueEnd == valueStart) {
-				valueStart = NULL;
-			}
-		}
-
 		CommandLineArgTemplate *foundTemplate = NULL;
-		HASH_FIND(nameHH, *templatesByName, optionStart, strlen(optionStart), foundTemplate);
+		HASH_FIND(nameHH, *templatesByName, option, strlen(option), foundTemplate);
 
 		if (!foundTemplate) {
-			HASH_FIND(longNameHH, *templatesByLongName, optionStart, strlen(optionStart), foundTemplate);
+			HASH_FIND(longNameHH, *templatesByLongName, option, strlen(option), foundTemplate);
 		}
 
 		if (!foundTemplate) {
@@ -81,11 +102,11 @@ static int ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, Com
 		foundTemplate->present = 1;
 
 		if (foundTemplate->takesArg && !foundTemplate->value) {
-			if (valueStart) {
-				foundTemplate->value = strndup(valueStart, valueEnd - valueStart);
+			if (value) {
+				foundTemplate->value = strdup(value);
 			} else {
 				if (errorMessage) {
-					asprintf(errorMessage, "Error reading configuration file %s: option %s takes an argument\n", configFile, optionStart);
+					asprintf(errorMessage, "Error reading configuration file %s: option %s takes an argument\n", configFile, option);
 				}
 				free(line);
 				return -1;
