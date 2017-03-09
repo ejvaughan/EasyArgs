@@ -20,6 +20,7 @@ To parse command line args with EasyArgs, you create argument templates that spe
     printf("%s\n", optionFoo.value);
 
 An argument template is created using the `CreateArgTemplate` macro:
+
 	/**
 	 * Creates a template for a command line argument.
 	 *
