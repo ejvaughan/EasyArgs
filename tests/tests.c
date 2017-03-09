@@ -39,6 +39,17 @@ static char *testArgument() {
 	return 0;
 }
 
+static char *testOptionPresent() {
+	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 0, 0, NULL);
+	CommandLineArgTemplate *templates[] = { &foo };
+	int templatesCount = sizeof(templates)/sizeof(templates[0]);
+	
+	char *argv[] = { "", "-f" };
+	ParseCommandLineArgs(2, argv, templates, templatesCount, NULL, NULL, NULL);
+	mu_assert(foo.present == 1, "Option should be marked as present!");
+	return 0;
+}
+
 static char *testMissingRequiredOption() {
 	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 1, 0, NULL);
 	CommandLineArgTemplate *templates[] = { &foo };
@@ -110,6 +121,7 @@ static char *allTests() {
 	mu_run_test(testUnkownOption);
 	mu_run_test(testMissingArgument);
 	mu_run_test(testMissingRequiredOption);
+	mu_run_test(testOptionPresent);
 	mu_run_test(testDuplicateTemplateArguments);
 	mu_run_test(testReadArgumentsFromDefaultConfig);
 	mu_run_test(testDefaultConfigArgumentOverride);
