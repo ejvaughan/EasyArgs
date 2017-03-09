@@ -50,7 +50,7 @@ In addition to parsing arguments provided via the command line, EasyArgs has the
     option3 value3
     ...
 
-where option1 and option3 take an argument, and option2 does not. The options are supplied without a preceding `-` or `--`.
+where `option1` and `option3` take an argument, and `option2` does not. The options are supplied without a preceding dash or double dash.
 
 If an option that takes an argument is supplied both on the command line and in a file, then the value supplied on the command line will take precedence.
 
@@ -58,4 +58,7 @@ The ability to supply options via a file in addition to the command line provide
 
 ## Installation
 
-TODO
+1. Clone the repo: `git clone --recursive https://github.com/ejvaughan/EasyArgs.git`
+2. Include `EasyArgs.h` in your project and add `EasyArgs.c` to your build process.
+3. Make sure `/path/to/repo/uthash/include' is added to your include paths, where `/path/to/repo` is the directory in which you cloned the repository.
+
