@@ -7,7 +7,7 @@
 #include "uthash.h"
 #include <errno.h>
 
-static void ParseOptionAndArgFromLine(char *line, ssize_t lineLength, char **outOption, char **outValue) {
+void ParseOptionAndArgFromLine(char *line, ssize_t lineLength, char **outOption, char **outValue) {
 	if (!line || !outOption || !outValue) {
 		return;
 	}

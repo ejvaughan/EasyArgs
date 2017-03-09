@@ -1,8 +1,36 @@
 #include "minunit.h"
 #include "EasyArgs.h"
+#include "EasyArgs_Private.h"
 #include <stdio.h>
 
 int tests_run = 0;
+
+static char *testParseOptionAndArgFromLine()
+{
+	char line1[] = "foo value";
+	
+	char *option = NULL;
+	char *value = NULL;
+	ParseOptionAndArgFromLine(line1, strlen(line1), &option, &value);
+
+	mu_assert(option != NULL && strcmp(option, "foo") == 0, "Option not correctly parsed!");
+	mu_assert(value != NULL && strcmp(value, "value") == 0, "Option argument not correctly parsed!");
+
+	option = NULL;
+	value = NULL;
+	char line2[] = "foo";
+	ParseOptionAndArgFromLine(line2, strlen(line2), &option, &value);
+	mu_assert(option != NULL && strcmp(option, "foo") == 0, "Option not correctly parsed!");
+	mu_assert(value == NULL, "Value should be NULL");
+
+	option = NULL;
+	char line3[] = "  foo  value";
+	ParseOptionAndArgFromLine(line3, strlen(line3), &option, &value);
+	mu_assert(option != NULL && strcmp(option, "foo") == 0, "Option not correctly parsed!");
+	mu_assert(value != NULL && strcmp(value, "value") == 0, "Value not correctly parsed!");
+
+	return 0;
+}
 
 static char *testMissingConfigFile()
 {
@@ -130,6 +158,7 @@ static char *testConfigOption() {
 
 
 static char *allTests() {
+	mu_run_test(testParseOptionAndArgFromLine);
 	mu_run_test(testMissingConfigFile);
 	mu_run_test(testUnkownOption);
 	mu_run_test(testMissingArgument);
