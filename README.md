@@ -39,6 +39,7 @@ An argument template is created using the `CreateArgTemplate` macro:
 { description, name, longName, required, takesArg, 0, NULL }
 ```
 
+## Parsing semantics
 The following scenarios define an unsuccessful parse:
 
 * A required option is missing
@@ -47,6 +48,7 @@ The following scenarios define an unsuccessful parse:
    
 If parsing succeeds, each template's `present` and `value` members will be set accordingly. For example, if `foo` is a template passed to the API, `foo.present` will be set if the option is supplied. This is useful to test for the presence of options that are not required. In addition, for options that take an argument, the argument's value is accessibile via `foo.value`.
 
+## Supplying arguments via a file
 In addition to parsing arguments provided via the command line, EasyArgs has the ability to read the arguments from a file. The file can be either a file in the current directory, or one that the user specifies on the command line via a special option. In either case, the format of the file must be as follows:
 
     option1 value1
@@ -56,6 +58,20 @@ In addition to parsing arguments provided via the command line, EasyArgs has the
 
 where `option1` and `option3` take an argument, and `option2` does not. The options are supplied without a preceding dash or double dash.
 
+Going back to the previous example, if we do:
+
+```c
+if (ParseCommandLineArgs(argc, argv, templates, numTemplates, NULL, "app.conf", &errorMessage) < 0) {
+...
+}
+```
+
+where `app.conf` is file in the current directory with the following contents:
+
+    foo some_arg
+
+then `foo.value` will be `some_arg`.
+
 If an option that takes an argument is supplied both on the command line and in a file, then the value supplied on the command line will take precedence.
 
 The ability to supply options via a file in addition to the command line provides automatic support for using a "configuration" file to control the program's behavior. This has the added benefit that the program's options are uniform across the configuration file and the command line. It's possible for the configuration file to supply only a portion of the options, with the others being supplied on the command line. Alternatively, the options present in the configuration file may serve as sensible defaults for the program, which can be overridden if necessary on the command line.
@@ -64,5 +80,5 @@ The ability to supply options via a file in addition to the command line provide
 
 1. Clone the repo: `git clone --recursive https://github.com/ejvaughan/EasyArgs.git`
 2. Include `EasyArgs.h` in your project and add `EasyArgs.c` to your build process.
-3. Make sure `/path/to/repo/uthash/include' is added to your include paths, where `/path/to/repo` is the directory in which you cloned the repository.
+3. Make sure `/path/to/repo/uthash/include` is added to your include paths, where `/path/to/repo` is the directory in which you cloned the repository.
 
