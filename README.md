@@ -6,7 +6,7 @@ To parse command line args with EasyArgs, you create argument templates that spe
 // Defines a required option -f / --foo that takes an argument
 CommandLineArgTemplate optionFoo = CreateArgTemplate("f", "foo", 1, 1, NULL);
 
-CommandLineArgTemplate *templates = { &optionFoo };
+CommandLineArgTemplate *templates[] = { &optionFoo };
 int numTemplates = sizeof(templates)/sizeof(templates[0]);
 
 char *errorMessage = NULL;
