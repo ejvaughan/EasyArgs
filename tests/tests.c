@@ -4,6 +4,18 @@
 
 int tests_run = 0;
 
+static char *testMissingConfigFile()
+{
+	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 0, 0, NULL);
+	CommandLineArgTemplate *templates[] = { &foo };
+	int templatesCount = sizeof(templates)/sizeof(templates[0]);
+
+	char *argv[] = { "" };
+	int argc = sizeof(argv)/sizeof(argv[0]);
+	mu_assert(ParseCommandLineArgs(argc, argv, templates, templatesCount, NULL, "nonexistentfile", NULL) == 0, "The config file should be optional!");
+	return 0;
+}
+
 static char *testUnkownOption() {
 	CommandLineArgTemplate foo = CreateArgTemplate("f", NULL, 0, 0, NULL);
 	CommandLineArgTemplate *templates[] = { &foo };
@@ -118,6 +130,7 @@ static char *testConfigOption() {
 
 
 static char *allTests() {
+	mu_run_test(testMissingConfigFile);
 	mu_run_test(testUnkownOption);
 	mu_run_test(testMissingArgument);
 	mu_run_test(testMissingRequiredOption);

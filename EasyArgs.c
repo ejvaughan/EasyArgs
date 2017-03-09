@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "uthash.h"
 #include <errno.h>
 
 static int ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, CommandLineArgTemplate **templatesByLongName, const char *configFile, char **errorMessage) {
 	if (!configFile) {
-		return;
+		return 0;
 	}
 
 	FILE *f = fopen(configFile, "r");
@@ -61,6 +62,8 @@ static int ParseArgsFromConfigFile(CommandLineArgTemplate **templatesByName, Com
 	}
 	
 	free(line);
+
+	return 0;
 }
 
 void FreeCommandLineArgTemplateResources(CommandLineArgTemplate *templates[], int templatesCount)
@@ -163,7 +166,7 @@ int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templat
 		if (ParseArgsFromConfigFile(&templatesByName, &templatesByLongName, configFileOptionTemplate->value, outError) < 0) {
 			retVal = -1;
 		}
-	} else if (defaultConfigFile != NULL) {
+	} else if (defaultConfigFile != NULL && access(defaultConfigFile, F_OK) == 0) {
 		if (ParseArgsFromConfigFile(&templatesByName, &templatesByLongName, defaultConfigFile, outError) < 0) {
 			retVal = -1;
 		}
