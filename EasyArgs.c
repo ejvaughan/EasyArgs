@@ -176,6 +176,10 @@ int ParseCommandLineArgs(int argc, char *argv[], CommandLineArgTemplate *templat
 	for (i = 0; i < templatesCount; ++i) {
 		CommandLineArgTemplate *template = templates[i];
 		if (template->required && !template->value) {
+			if (outError) {
+				char *optionName = (template->name) ? template->name : template->longName;
+				asprintf(outError, "Option %s is required", optionName);
+			}	
 			retVal = -1;
 			break;
 		}
