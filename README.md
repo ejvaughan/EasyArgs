@@ -44,10 +44,11 @@ The following scenarios define an unsuccessful parse:
 If parsing succeeds, each template's `present` and `value` members will be set accordingly. For example, if `foo` is a template passed to the API, `foo.present` will be set if the option is supplied. This is useful to test for the presence of options that are not required. In addition, for options that take an argument, the argument's value is accessibile via `foo.value`.
 
 In addition to parsing arguments provided via the command line, EasyArgs has the ability to read the arguments from a file. The file can be either a file in the current directory, or one that the user specifies on the command line via a special option. In either case, the format of the file must be as follows:
-     option1 value1
-     option2
-     option3 value3
-     ...
+
+    option1 value1
+    option2
+    option3 value3
+    ...
 
 where option1 and option3 take an argument, and option2 does not. The options are supplied without a preceding `-` or `--`.
 
