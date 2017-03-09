@@ -35,6 +35,7 @@ An argument template is created using the `CreateArgTemplate` macro:
 	{ description, name, longName, required, takesArg, 0, NULL }
 
 The following scenarios define an unsuccessful parse:
+
 * A required option is missing
 * An option is missing its argument
 * An unknown option is present (only checked for arguments in `argv`; see below)
